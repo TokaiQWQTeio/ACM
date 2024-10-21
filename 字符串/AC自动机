@@ -1,0 +1,245 @@
+//基础版
+const int N = 1e6 + 10;
+
+ll n, m;
+
+string s;
+
+ll cnt = 0;
+
+struct TR
+{
+	int v[26];
+	int fl;
+	int ed;
+}t[N];
+
+//插入
+void insert(string s)
+{
+	int now = 0;
+	for(int i = 0; i < (int)s.length(); i ++ )
+	{
+		if(!t[now].v[s[i] - 'a']) t[now].v[s[i] - 'a'] = ++cnt;
+		now = t[now].v[s[i] - 'a'];
+	}
+	t[now].ed ++;
+}
+
+//建立fail边
+void G()
+{
+	queue<int>Q;
+	for(int i = 0; i < 26; i ++ )
+	{
+		if(t[0].v[i])
+		{
+			t[t[0].v[i]].fl = 0;
+			Q.push(t[0].v[i]);
+		}
+	}
+	while(!Q.empty())
+	{
+		int u = Q.front();
+		Q.pop();
+		for(int i = 0; i < 26; i ++ )
+		{
+			if(t[u].v[i])
+			{
+				t[t[u].v[i]].fl = t[t[u].fl].v[i];
+				Q.push(t[u].v[i]);
+			}
+			else t[u].v[i] = t[t[u].fl].v[i];
+		}
+	}
+}
+
+//查询
+int query(string s)
+{
+	int ans = 0;
+	int now = 0;
+	for(int i = 0; i < (int)s.length(); i ++ )
+	{
+		now = t[now].v[s[i] - 'a'];
+		int j = now;
+		while(j && t[j].ed != -1)
+		{
+			ans += t[j].ed;
+			t[j].ed = -1;
+			j = t[j].fl;
+		}
+	}
+	return ans;
+}
+
+void Solve()
+{
+	cin >> n;
+	for(int i = 1; i <= n; i ++ )
+	{
+		cin >> s;
+		insert(s);
+	}
+	t[0].fl = 0;
+	G();
+	cin >> s;
+	cout << query(s) << edl;
+}
+
+//清空函数多组使用（速度巨慢非必要不使用）
+void clear()
+{
+    queue<int>Q;
+    for(int i = 0; i < 26; i ++ )
+    {
+        if(t[0].v[i])
+        {
+            t[t[0].v[i]].fl = 0;
+            Q.push(t[0].v[i]);
+        }
+    }
+    while(!Q.empty())
+    {
+        int u = Q.front();
+        t[u].ed = t[u].fl = 0;
+        Q.pop();
+        for(int i = 0; i < 26; i ++ )
+        {
+            if(t[u].v[i]) Q.push(t[u].v[i]);
+            t[u].v[i] = 0;
+        }
+    }
+}
+
+//TOPU优化版
+
+struct Tree
+{
+	ll fail;
+	ll vis[26];
+	ll end;
+	ll ii;
+	ll ans;
+} t[1000000];
+
+ll ok[1000000],ANS[1000000];
+
+ll cnt = 0;
+
+map<ll,ll>mp;
+
+void ACinsert(string s,int i)
+{
+	ll now = 0;
+	for (ll i = 0; i < (int)s.length(); i++)
+	{
+		if (!t[now].vis[s[i] - 'a'])
+			t[now].vis[s[i] - 'a'] = ++cnt;
+		now = t[now].vis[s[i] - 'a'];
+	}
+	//重复字符串的处理
+	if(!t[now].ii) t[now].ii = i;
+	mp[i] = t[now].ii;
+	t[now].end = 1;//标记出现的字符串
+}
+
+ll ACfind(string s)
+{
+	ll now = 0;
+	for(ll i = 0; i < (int)s.length(); i ++ )
+	{
+		if(!t[now].vis[s[i] - 'a']) return 0;
+		now = t[now].vis[s[i] - 'a'];
+	}
+	ll ok = t[now].end;
+	return ok;
+}
+
+//建立fail边
+
+void Get_fail()
+{
+	queue<ll> Q;
+	for (ll i = 0; i < 26; i++)
+	{
+		if (t[0].vis[i])
+		{
+			t[t[0].vis[i]].fail = 0;
+			Q.push(t[0].vis[i]);
+		}
+	}
+	while (!Q.empty())
+	{
+		ll u = Q.front();
+		Q.pop();
+		for (ll i = 0; i < 26; i++)
+		{
+			if (t[u].vis[i])
+			{
+				t[t[u].vis[i]].fail = t[t[u].fail].vis[i];
+				ok[t[t[u].vis[i]].fail] ++;
+				Q.push(t[u].vis[i]);
+			}
+			else t[u].vis[i] = t[t[u].fail].vis[i];
+		}
+	}
+}
+
+void AC_query(string s)
+{
+	ll now = 0;
+	for(ll i = 0; i < (int)s.length(); i ++ )
+	{
+		now = t[now].vis[s[i] - 'a'];
+		t[now].ans ++;
+	}
+}
+
+void ToPu()
+{
+	queue<ll>q;
+	for(int i = 1; i <= cnt; i ++ )
+	{
+		if(!ok[i]) q.push(i);
+	}
+	while(!q.empty())
+	{
+		ll u = q.front();
+		q.pop();
+		ANS[t[u].ii] = t[u].ans;
+		ll v = t[u].fail;
+		ok[v] --;
+		t[v].ans += t[u].ans;
+		if(!ok[v]) q.push(v);
+	}
+}
+
+ll n,m;
+
+string s[200001],ss;
+
+void solve()
+{
+	cin >> n;
+	for (ll i = 1; i <= n; i++)
+	{
+		cin >> s[i];
+		ACinsert(s[i],i);
+	}
+	t[0].fail = 0;
+	Get_fail();
+	cin >> ss;
+	AC_query(ss);
+	ToPu();//拓扑优化
+	for(ll i = 1; i <= n; i ++ )
+	{
+		cout << ANS[mp[i]] << edl;//查询每个模式串出现次数
+	}
+}
+
+int main()
+{
+	solve();
+	return 0;
+}
