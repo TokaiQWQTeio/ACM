@@ -1,1 +1,34 @@
+const int N = 1e6 + 10;
 
+int nxt[N];
+
+int main()
+{
+	string s,t;
+	cin >> s;
+	cin >> t;
+	//预处理nxt数组
+	int j = 0;
+	for(int i = 1; i < (int)t.length(); i ++ )
+	{
+		while(j && t[j] != t[i]) j = nxt[j];
+		if(t[j] == t[i]) nxt[i + 1] = ++j;
+	}
+	//
+	//匹配开始
+	j = 0;
+	for(int i = 0; i < (int)s.length(); i ++ )
+	{
+		while(j && t[j] != s[i]) j = nxt[j];
+		if(t[j] == s[i]) ++j;
+		if(j == (int)t.length())
+		{
+			//i表示匹配的下标(从0开始)
+			//s = ABABABC
+			//t = ABA
+			//i = 2,4;
+		}
+	}
+	//
+	return 0;
+}
