@@ -1,7 +1,6 @@
 const int N = 1e6 + 10;
 
 int nxt[N];
-
 int main()
 {
 	string s,t;
@@ -32,3 +31,6 @@ int main()
 	//
 	return 0;
 }
+
+//一个字符串反复删除另一个字符串
+//巧用栈思想
