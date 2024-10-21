@@ -1,1 +1,118 @@
+//一维hash
+struct Hash
+{
+	vector<ll>hl1,hl2,hr1,hr2,p1,p2;
+	//可换其他BASE和MOD
+	ll BASE1 = 233, MOD1 = 1004535809;
+	ll BASE2 = 239, MOD2 = 2013265921;
+	//初始化
+  void init(ll l)
+	{
+		hl1.resize(l * 2,0);
+		hl2.resize(l * 2,0);
+		hr1.resize(l * 2,0);
+		hr2.resize(l * 2,0);
+		p1.resize(l * 2,0);
+		p2.resize(l * 2,0);
+		hr1[0] = hl1[0] = hr1[l] = hl1[l] = 0;
+		hr2[0] = hl2[0] = hr2[l] = hl2[l] = 0;
+		p1[0] = 1;
+		p2[0] = 1;
+	}
+	//hash
+	void work(string s)
+	{
+		s = " " + s;
+		ll l = s.length();
+		init(l);
+		for(int i = 1,j = l - 1; i < l; i ++,j -- )
+		{
+			hl1[i] = (hl1[i - 1] * BASE1 % MOD1 + s[i] - '0' + 1) % MOD1;
+			hr1[j] = (hr1[j + 1] * BASE1 % MOD1 + s[j] - '0' + 1) % MOD1;
+			p1[i] = p1[i - 1] * BASE1 % MOD1;
+			hl2[i] = (hl2[i - 1] * BASE2 % MOD2 + s[i] - '0' + 1) % MOD2;
+			hr2[j] = (hr2[j + 1] * BASE2 % MOD2 + s[j] - '0' + 1) % MOD2;
+			p2[i] = p2[i - 1] * BASE2 % MOD2;
+		}
+	}
+	//查询函数
+	ll get_hashl1(int l,int r)
+	{
+		return ((hl1[r] - (hl1[l - 1] * p1[r - l + 1] % MOD1)) % MOD1 + MOD1) % MOD1;
+	}
+	
+	ll get_hashl2(int l,int r)
+	{
+		return ((hl2[r] - (hl2[l - 1] * p2[r - l + 1] % MOD2)) % MOD2 + MOD2) % MOD2;
+	}
+	
+	ll get_hashr1(int l,int r)
+	{
+		return ((hr1[l] - (hr1[r + 1] * p1[r - l + 1] % MOD1)) % MOD1 + MOD1) % MOD1;
+	}
+	
+	ll get_hashr2(int l,int r)
+	{
+		return ((hr2[l] - (hr2[r + 1] * p2[r - l + 1] % MOD2)) % MOD2 + MOD2) % MOD2;
+	}
+};
 
+//二维hash（未包装）
+#define ll long long
+const int B[] = {114514, 223333};
+const int P = 2147483629;
+const int N = 1e6 + 10;
+
+ll p[2][N];
+
+void init(int N) {
+	p[0][0] = p[1][0] = 1;
+	for (int i = 1; i <= N; i++) {
+		p[0][i] = p[0][i - 1] * B[0] % P;
+		p[1][i] = p[1][i - 1] * B[1] % P;
+	}
+}
+
+struct StringHash2D {
+	int n, m;
+	vector<vector<ll>> h;
+	StringHash2D(const vector<string> &a) {
+		n = a.size();
+		m = (n == 0 ? 0 : a[0].size());
+		h.assign(n + 1, {});
+		for (int i = 0; i <= n; i++) {
+			h[i].assign(m + 1, 0);
+		}
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < m; j++) {
+				h[i + 1][j + 1] = (h[i][j + 1] * B[0] % P + h[i + 1][j] * B[1] % P + 
+					(P - h[i][j]) * B[0] % P * B[1] % P + a[i][j]) % P; 
+			}
+		}
+	}
+	//矩阵的左上角和右下角坐标
+	ll get(int x1, int y1, int x2, int y2) {
+		return (h[x2][y2] + h[x1][y1] * p[0][x2 - x1] % P * p[1][y2 - y1] % P + 
+			(P - h[x1][y2]) * p[0][x2 - x1] % P + (P - h[x2][y1]) * p[1][y2 - y1] % P) % P;
+	}
+};
+
+//自测理解用法
+// init(2001);
+// cin >> n >> m;
+// vector<string> a(n);
+// for (int i = 0; i < n; i++) cin >> a[i];
+// auto b = a;
+// for (int i = 0; i < n; i++)
+//     for (int j = 0; j < m; j++)
+//         b[i][j] = a[n - 1 - i][m - 1 - j];
+
+// StringHash2D hs1(a), hs2(b);
+// auto ok = [&](int x1, int y1, int x2, int y2) {
+//     return hs1.get(x1, y1, x2, y2) == hs2.get(n - x2, m - y2, n - x1, m - y1);
+// };
+// if(ok(0,0,1,1)) cout << 1;
+// 3 4
+// abcz
+// badz
+// cbaz
