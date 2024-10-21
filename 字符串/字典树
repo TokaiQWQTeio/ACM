@@ -1,1 +1,43 @@
+const int N = 1e6 + 10;
 
+ll n, m;
+
+string s;
+
+ll cnt = 0;
+
+struct TR
+{
+	int v[26];//大小看情况
+	int fl;
+	int ed;
+}t[N];
+
+//插入
+void insert(string s)
+{
+	int now = 0;
+	for(int i = 0; i < (int)s.length(); i ++ )
+	{
+		if(!t[now].v[s[i] - 'a']) t[now].v[s[i] - 'a'] = ++cnt;
+		now = t[now].v[s[i] - 'a'];
+	}
+	t[now].ed ++;
+}
+
+//查询
+int find(string s)
+{
+	int now = 0;
+	for(int i = 0; i < (int)s.length(); i ++ )
+	{
+		if(!t[now].v[s[i] - 'a']) return 0;
+		now = t[now].v[s[i] - 'a'];
+	}
+	if(t[now].ed > 0)
+	{
+		t[now].ed = -t[now].ed;
+		return 1;
+	}
+	else return t[now].ed;
+}
