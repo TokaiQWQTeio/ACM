@@ -1,1 +1,244 @@
+//后缀自动机
+struct SAM
+{
+	string s;
+	int size, last;
+	vector<int>len, link,siz,t,AN;
+	vector<vector<int>> to;
+	//字符串长度，字符集大小
+	void Init(int strlen, int chSize)
+	{
+		size = 1;
+		last = 1;
+		len.resize(strlen << 1,0);
+		AN.resize(strlen << 1,0);
+		t.resize(strlen << 1,0);
+		link.resize(strlen << 1,0);
+		siz.resize(strlen << 1,0);
+		to.resize(strlen << 1,vector<int>(chSize,0));
+	}
+	
+	//清空
+	void clear()
+	{
+		to.clear();
+		len.clear();
+		link.clear();
+	}
+	
+	//为当前的SAM增加一个字符C
+	void extend(int c)
+	{
+		int p,cur = ++size;
+		len[cur] = len[last] + 1;
+		siz[cur] = 1;//表示某个子串出现次数
+		//情况1
+		for(p = last; p && !to[p][c]; p = link[p])
+		{
+			to[p][c] = cur;
+		}
+		if(!p) link[cur] = 1;
+		else
+		{
+			int q = to[p][c];
+			//情况2 - A
+			if(len[q] == len[p] + 1) link[cur] = q;
+			else
+			{
+				//情况2 - B
+				int cl = ++size;
+				len[cl] = len[p] + 1;
+				to[cl] = to[q],link[cl] = link[q];
+				while(p && to[p][c] == q)
+				{
+					to[p][c] = cl;
+					p = link[p];
+				}
+				link[cur] = link[q] = cl;
+			}
+		}
+		last = cur;
+	}
+	
+	void TOPU()
+	{
+		for(int i = 1; i <= size; i ++ ) t[len[i]] ++;
+		for(int i = 1; i <= size; i ++ ) t[i] += t[i - 1];
+		for(int i = 1; i <= size; i ++ ) AN[t[len[i]]--] = i;
+		for(int i = size; i >= 1; i -- ) siz[link[AN[i]]] += siz[AN[i]];
+	}
+	
+	int find(string& ok)
+	{
+		if(ok.length() > s.length()) return 0;
+		int now = 1;
+		for(int i = 0; i < (int)ok.length(); i ++ )
+		{
+			if(to[now][ok[i] - 'a' + 1]) now = to[now][ok[i] - 'a' + 1];
+			else return 0;
+		}
+		return 1;
+	}
+	
+	void build()
+	{
+		cin >> s;
+		Init(s.length(),30);
+		ll ans = 0;
+		for(int i = 0; i < (int)s.length(); i ++ ) extend(s[i] - 'a' + 1);
+		TOPU();
+		for(int i = 1; i <= size; i ++ )
+		{
+			if(siz[i] > 1)
+			{
+				ans = max(ans,1LL * siz[i] * len[i]);
+			}
+		}
+		cout << ans << '\n';
+	}
+	
+	
+}sam;
 
+//Tire树版
+
+struct Tire
+{
+	int v[27];
+	int ch;
+	int fa;
+	int ls;
+	vector<int>ok;
+	Tire()
+	{
+		ok.assign(10,0);
+	}
+};
+
+struct SAM
+{
+	int idx = 1,n;
+	Tire tr[M];
+	string s;
+	int col[M];
+	int size,last;
+	vector<int>len, link,t,AN;
+	vector<int>e[M];
+	vector<vector<int>> to,op;
+	//字符串长度，字符集大小
+	void Init(int strlen, int chSize)
+	{
+		last = 1;
+		size = 1;
+		len.resize(M,0);
+		link.resize(M,0);
+		AN.resize(M,0);
+		t.resize(M,0);
+		to.resize(M,vector<int>(chSize + 1,0));
+		op.resize(M,vector<int>(10,0));
+	}
+	
+	//清空
+	void clear()
+	{
+		to.clear();
+		len.clear();
+		link.clear();
+	}
+	
+	//为当前的SAM增加一个字符C
+	void extend(int c,vector<int>& zz)
+	{
+		int p,cur = ++size;
+		len[cur] = len[last] + 1;
+		for(int i = 1; i <= n; i ++ ) op[cur][i] = zz[i];
+		//情况1
+		for(p = last; p && !to[p][c]; p = link[p])
+		{
+			to[p][c] = cur;
+		}
+		if(!p) link[cur] = 1;
+		else
+		{
+			int q = to[p][c];
+			//情况2 - A
+			if(len[q] == len[p] + 1) link[cur] = q;
+			else
+			{
+				//情况2 - B
+				int cl = ++size;
+				len[cl] = len[p] + 1;
+				to[cl] = to[q],link[cl] = link[q];
+				while(p && to[p][c] == q)
+				{
+					to[p][c] = cl;
+					p = link[p];
+				}
+				link[cur] = link[q] = cl;
+			}
+		}
+		last = cur;
+	}
+	
+	void bfs()
+	{
+		queue<int>q;
+		for(int i = 1; i <= 26; i ++ ) if(tr[1].v[i]) q.push(tr[1].v[i]);
+		tr[1].ls = 1;
+		while(q.size())
+		{
+			int u = q.front();
+			q.pop();
+			last = tr[tr[u].fa].ls;
+			extend(tr[u].ch,tr[u].ok);
+			tr[u].ls = last;
+			for(int i = 1; i <= 26; i ++ ) if(tr[u].v[i]) q.push(tr[u].v[i]);
+		}
+	}
+	
+	void TOPU()
+	{
+		for(int i = 1; i <= size; i ++ ) t[len[i]] ++;
+		for(int i = 1; i <= size; i ++ ) t[i] += t[i - 1];
+		for(int i = 1; i <= size; i ++ ) AN[t[len[i]]--] = i;
+		for(int i = size; i >= 1; i -- )
+		{
+			for(int j = 1; j <= n; j ++ )
+			{
+				op[link[AN[i]]][j] += op[AN[i]][j];
+			}
+		}
+	}
+	
+	void build()
+	{
+		cin >> n;
+		Init(n,27);
+		for(int i = 1; i <= n; i ++ )
+		{
+			cin >> s;
+			int x = 1;
+			for(int j = 0; j < (int)s.length(); j ++ )
+			{
+				if(!tr[x].v[s[j] - 'a' + 1])
+				{
+					tr[x].v[s[j] - 'a' + 1] = ++idx;
+					tr[idx].fa = x;
+					tr[idx].ch = s[j] - 'a' + 1;
+				}
+				x = tr[x].v[s[j] - 'a' + 1];
+				tr[x].ok[i] = 1;
+			}
+		}
+		bfs();
+		TOPU();
+		ll ans = 0;
+		for(int i=1;i<=size;i++)
+			for(int j = 1; j <= n; j ++ )
+			{
+				if(op[i][j] == 0) break;
+				if(j == n) ans = max(ans,(ll)len[i]);
+			}
+		cout << ans << '\n';
+	}
+}sam;
