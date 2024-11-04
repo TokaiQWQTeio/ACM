@@ -1,0 +1,356 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define edl '\n'
+#define SPO(n) fixed << setprecision(n)
+#define debug(x) printf(" "#x":%d\n",x);
+const double PI = acos(-1);
+#define MAXN 100005
+ll MAX = 0x3f3f3f3f3f3f3f3fll;
+ll MIN = -MAX;
+const int mod = 1e9 + 7;
+const int N = 2e6 + 10;
+ll fc[N], nn[N], NN[N];
+
+using i128 = __int128;
+std::ostream &operator<<(std::ostream &os, i128 n) {
+	if(n == 0) return os << "0";
+	std::string s;
+	while (n) {
+		s += '0' + n % 10;
+		n /= 10;
+	}
+	std::reverse(s.begin(), s.end());
+	return os << s;
+}
+
+mt19937_64 rnd(98275314);
+long long gen()
+{
+	long long x = 0;
+	while(x == 0)
+		x = rnd();
+	return x;
+}
+
+ll n,m;
+
+bool inC[N];
+int stk[N], top;
+
+
+struct Point {
+	ll x, y;
+	Point(ll x = 0, ll y = 0) :x(x), y(y) {}
+	Point operator -(const Point& b)const { return Point(x - b.x, y - b.y); }
+	Point operator +(const Point& b)const { return Point(x + b.x, y + b.y); }
+	Point operator *(ll k)const { return Point(x * k, y * k); }
+	ll operator ^(const Point& b)const { return x * b.y - y * b.x; }
+	ll operator *(const Point& b)const { return x * b.x + y * b.y; }
+	ll operator !()const { return sqrt(*this * *this); }
+	bool operator <(const Point& b) const { return y - b.y < 0 || (y - b.y == 0 && x - b.x < 0); }
+	bool operator ==(const Point& b)const { return !(*this < b) && !(b < *this); }
+	bool operator >(const Point& b)const { return b < *this; }
+	bool operator <=(const Point& b)const { return !(*this > b); }
+	bool operator >=(const Point& b)const { return !(*this < b); }
+	bool operator !=(const Point& b)const { return !(*this == b); }
+	Point operator /(ll k)const { return Point(x / k, y / k); }
+	ll operator ~()const { return atan2(y, x); }
+	Point operator -()const { return Point(-x, -y); }
+	ll len2()const { return x * x + y * y; }
+	ll len()const { return !*this; }
+	ll dis(const Point& b)const { return (*this - b).len(); }
+	ll dis2(const Point& b)const { return (*this - b).len2(); }
+	Point rotate(ll a)const { return Point(x * cos(a) - y * sin(a), x * sin(a) + y * cos(a)); }
+	Point rotate(ll a, const Point& o)const { return Point(x * cos(a) - y * sin(a) + o.x, x * sin(a) + y * cos(a) + o.y); }
+	Point unit()const { return *this / len(); }
+	ll sqr(const Point& b, const Point& c) {
+		return (b - *this) ^ (c - *this);
+	}//计算三角形面积*2
+	ll proj(const Point& b, const Point& c) {
+		return (b - *this) * (c - *this);
+	}
+	void rot90() { swap(x, y); x = -x; }
+}a[N];
+
+
+struct polygon {
+	int n;
+	vector<Point>pt;//存储凸包上的点
+	polygon(int _n = 0) :n(_n) { pt.resize(n); }
+	polygon(vector<Point> _pt) :pt(_pt) { n = pt.size(); }
+	void unit() {
+		Point lp = pt[0];
+		for (int i = 1; i < n; ++i)pt[i] = pt[i] - lp;
+	}
+	Point& operator[](const int& i) { return pt[i % n]; }
+	Point& back() { return pt.back(); }
+	ll area() {//凸包的面积*2
+		ll res = 0;
+		for (int i = 0; i < n; ++i)
+			res += pt[i] ^ pt[(i + 1) % n];
+		return abs(res);
+	}
+};
+//求凸包
+polygon Andrew() {
+	top = 0;
+	memset(inC + 1, 0, sizeof(bool) * n);
+	sort(a + 1, a + n + 1, [&](Point a, Point b) { return a.x < b.x || (a.x == b.x && a.y < b.y); });
+	for (int i = 1; i <= n; ++i) {
+		while (top > 1 && ((a[stk[top]] - a[stk[top - 1]]) ^ (a[i] - a[stk[top]])) < 0)
+			inC[stk[top--]] = 0;
+		stk[++top] = i;
+		inC[i] = 1;
+	}
+	inC[1] = 0;
+	
+	int t = top;
+	for (int i = n - 1; i >= 1; --i) {
+		if (inC[i]) continue;
+		while (top > t && ((a[stk[top]] - a[stk[top - 1]]) ^ (a[i] - a[stk[top]])) < 0)
+			inC[stk[top--]] = 0;
+		stk[++top] = i;
+		inC[i] = 1;
+	}
+	if (!top) return polygon();
+	if (top == 1) return polygon({a[1]});
+	static bool vis[MAXN];
+	polygon res(top - 1);
+	for (int i = 1; i <= top; ++i) {
+		vis[stk[i]] = 1;
+		res[i - 1] = a[stk[i]];
+	}
+	for (int i = 1, j = 1; i <= n; ++i) {
+		if (vis[i]) continue;
+		a[j++] = a[i];
+	}
+	n -= top - 1;
+	for (int i = 1; i <= top; ++i) vis[stk[i]] = 0;
+	return res;
+}
+
+template <typename T>
+struct Fenwick {
+	int n;
+	std::vector<T> a;
+	
+	Fenwick(int n_ = 0) {
+		init(n_);
+	}
+	
+	void init(int n_) {
+		n = n_;
+		a.assign(n, T{});
+	}
+	
+	void add(int x, const T &v) {
+		for (int i = x + 1; i <= n; i += i & -i) {
+			a[i - 1] = a[i - 1] + v;
+		}
+	}
+	//[0,x)
+	T sum(int x) {
+		T ans{};
+		for (int i = x; i > 0; i -= i & -i) {
+			ans = ans + a[i - 1];
+		}
+		return ans;
+	}
+	//左闭右开
+	T rangeSum(int l, int r) {
+		return sum(r) - sum(l);
+	}
+	
+	//return 第一个sum(x) > k的x
+	int select(const T &k) {
+		int x = 0;
+		T cur{};
+		for (int i = 1 << __lg(n); i; i /= 2) {
+			if (x + i <= n && cur + a[x + i - 1] <= k) {
+				x += i;
+				cur = cur + a[x - 1];
+			}
+		}
+		return x;
+	}
+};
+
+struct Hash
+{
+	vector<ll>hl1,hl2,hr1,hr2,p1,p2;
+	ll BASE1 = 233, MOD1 = 1004535809;
+	ll BASE2 = 239, MOD2 = 2013265921;
+	
+	void init(ll l)
+	{
+		hl1.resize(l * 2,0);
+		hl2.resize(l * 2,0);
+		hr1.resize(l * 2,0);
+		hr2.resize(l * 2,0);
+		p1.resize(l * 2,0);
+		p2.resize(l * 2,0);
+		hr1[0] = hl1[0] = hr1[l] = hl1[l] = 0;
+		hr2[0] = hl2[0] = hr2[l] = hl2[l] = 0;
+		p1[0] = 1;
+		p2[0] = 1;
+	}
+	
+	void work(string s)
+	{
+		s = " " + s;
+		ll l = s.length();
+		init(l);
+		for(int i = 1,j = l - 1; i < l; i ++,j -- )
+		{
+			hl1[i] = (hl1[i - 1] * BASE1 % MOD1 + s[i] - '0' + 1) % MOD1;
+			hr1[j] = (hr1[j + 1] * BASE1 % MOD1 + s[j] - '0' + 1) % MOD1;
+			p1[i] = p1[i - 1] * BASE1 % MOD1;
+			hl2[i] = (hl2[i - 1] * BASE2 % MOD2 + s[i] - '0' + 1) % MOD2;
+			hr2[j] = (hr2[j + 1] * BASE2 % MOD2 + s[j] - '0' + 1) % MOD2;
+			p2[i] = p2[i - 1] * BASE2 % MOD2;
+		}
+	}
+	
+	ll get_hashl1(int l,int r)
+	{
+		return ((hl1[r] - (hl1[l - 1] * p1[r - l + 1] % MOD1)) % MOD1 + MOD1) % MOD1;
+	}
+	
+	ll get_hashl2(int l,int r)
+	{
+		return ((hl2[r] - (hl2[l - 1] * p2[r - l + 1] % MOD2)) % MOD2 + MOD2) % MOD2;
+	}
+	
+	ll get_hashr1(int l,int r)
+	{
+		return ((hr1[l] - (hr1[r + 1] * p1[r - l + 1] % MOD1)) % MOD1 + MOD1) % MOD1;
+	}
+	
+	ll get_hashr2(int l,int r)
+	{
+		return ((hr2[l] - (hr2[r + 1] * p2[r - l + 1] % MOD2)) % MOD2 + MOD2) % MOD2;
+	}
+}has;
+
+int phi(int n)
+{
+	int res = n;
+	for (int i = 2; i * i <= n; i++)
+	{
+		if (n % i == 0)
+		{
+			res = res - res / i;
+			while (n % i == 0)
+				n /= i;
+		}
+	}
+	if (n > 1)
+		res = res - res / n;
+	return res;
+}
+
+ll quick_pow(ll a, ll b, ll md)
+{
+	ll ans = 1;
+	while (b)
+	{
+		if (b & 1)
+			ans = (ans * a) % md;
+		b >>= 1;
+		a = (a * a) % md;
+	}
+	return ans;
+}
+
+ll inv(ll a, ll b, ll md)
+{
+	return (a * quick_pow(b, md - 2, md)) % md;
+}
+
+void CC(ll md)
+{
+	fc[0] = nn[0] = NN[0] = 1;
+	for (int i = 1; i <= N - 2; i++)
+		fc[i] = fc[i - 1] * i % md;
+	NN[N - 2] = quick_pow(fc[N - 2], md - 2, md);
+	for (int i = N - 2 - 1; i >= 1; i--)
+		NN[i] = NN[i + 1] * (i + 1) % md;
+	for (int i = 1; i <= N - 2; i++)
+		nn[i] = NN[i] * fc[i - 1] % md;
+}
+
+ll C(ll n, ll m)
+{
+	if (n < m || n < 0 || m < 0)
+		return 0;
+	return fc[n] * NN[m] % mod * NN[n - m] % mod;
+}
+
+vector<ll>g[N];
+
+struct lca_st {
+	
+	vector<ll>dep;
+	vector<vector<ll>>fa;
+	
+	void init(int n)
+	{
+		fa = vector (n + 1, vector<ll>(30));
+		dep = vector<ll>(n + 1);
+		dep[0] = -1;
+	}
+	
+	void dfs(int u, int father) {
+		dep[u] = dep[father] + 1;
+		fa[u][0] = father;
+		for (int i = 1; i <= 20; i++)
+			fa[u][i] = fa[fa[u][i - 1]][i - 1];
+		
+		for (auto v : g[u])
+			if (v != father)
+				dfs(v, u);
+	}
+	
+	int lca(int u, int v) {
+		if (dep[u] < dep[v])
+			swap(u, v);
+		for (int i = 20; i >= 0; i--)
+			if (dep[fa[u][i]] >= dep[v])
+				u = fa[u][i];
+		if (u == v)
+			return v;
+		for (int i = 20; i >= 0; i--)
+			if (fa[u][i] != fa[v][i])
+				u = fa[u][i], v = fa[v][i];
+		return fa[u][0];
+	}
+};
+
+ll f[N];
+
+int find(int k){if (f[k] == k) return k;return f[k] = find(f[k]);}
+
+lca_st lca;
+
+void solve() {
+	
+}
+
+int main()
+{
+	std::ios::sync_with_stdio(false);
+	std::cin.tie(nullptr);
+	// CC(mod);
+    clock_t c1 = clock();
+	int t = 1;
+	cin >> t;
+	while(t -- ) solve();
+#ifdef LOCAL
+    end :
+    cerr << "Time Used:" << clock() - c1 << "ms" << endl;
+#endif
+	return 0;
+}
+
+
